@@ -74,7 +74,7 @@ public class MapFrame extends JFrame {
 			}
 
 		} catch (IOException error) {
-			//this.console.setText("File not Found");
+		//	MapFrame.this.console.setText("File not Found");
 		}
 //		 places.add("Indianapolis");
 //		 places.add("Terre Haute");
