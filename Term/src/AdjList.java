@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 
@@ -9,10 +13,30 @@ import java.util.HashMap;
  */
 public class AdjList {
 	
+
+	
 	public HashMap<String, Place> adj;
 	public Place p;
 	
 	
+	
+	public AdjList(){
+			
+			ArrayList<String> places = new ArrayList<String>();
+			try {
+				BufferedReader read = new BufferedReader(new FileReader("input.in"));
+				int numberOfCities = Integer.parseInt(read.readLine().toString());
+				for (int i = 0; i < numberOfCities; i++) {
+					cities.put(read.readLine().toString(), read.readLine()
+							.toString());
+				}
+
+			} catch (IOException error) {
+				//this.console.setText("File not Found");
+			}
+
+		
+	}
 	/**
 	 * TODO Add the new place into the adjacency list
 	 * @param newPlace New place to be added
