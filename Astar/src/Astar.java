@@ -1,326 +1,242 @@
-import java.awt.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
-import javax.swing.text.html.HTMLDocument.Iterator;
+/**
+ * A* algorithm implementation using the method design pattern.
+ * 
+ * @author Yichuan Wang
+ */
+public abstract class AStar<T>
+{
+                private class Path implements Comparable{
+                                public T point;
+                                public Double f;
+                                public Double g;
+                                public Path parent;
+                                
+                                /**
+                                 * Default c'tor.
+                                 */
+                                public Path(){
+                                                parent = null;
+                                                point = null;
+                                                g = f = 0.0;
+                                }
 
+                                /**
+                                 * C'tor by copy another object.
+                                 * 
+                                 * @param p The path object to clone.
+                                 */
+                                public Path(Path p){
+                                                this();
+                                                parent = p;
+                                                g = p.g;
+                                                f = p.f;
+                                }
 
-public class Astar {
-	final class NodeData<T> { 
+                                /**
+                                 * Compare to another object using the total cost f.
+                                 *
+                                 * @param o The object to compare to.
+                                 * @see       Comparable#compareTo()
+                                 * @return <code>less than 0</code> This object is smaller
+                                 * than <code>0</code>;
+                                 *        <code>0</code> Object are the same.
+                                 *        <code>bigger than 0</code> This object is bigger
+                                 * than o.
+                                 */
+                                public int compareTo(Object o){
+                                                Path p = (Path)o;
+                                                return (int)(f - p.f);
+                                }
 
-	    private final T nodeId;
-	    private final Map<T, Double> heuristic;
+                                /**
+                                 * Get the last point on the path.
+                                 *
+                                 * @return The last point visited by the path.
+                                 */
+                                public T getPoint(){
+                                                return point;
+                                }
 
-	    private double g;  // g is distance from the source
-	    private double h;  // h is the heuristic of destination.
-	    private double f;  // f = g + h 
+                                /**
+                                 * Set the 
+                                 */
+                                public void setPoint(T p){
+                                                point = p;
+                                }
+                }
 
-	    public NodeData (T nodeId, Map<T, Double> heuristic) {
-	        this.nodeId = nodeId;
-	        this.g = Double.MAX_VALUE; 
-	        this.heuristic = heuristic;
-	    }
+                /**
+                 * Check if the current node is a goal for the problem.
+                 *
+                 * @param node The node to check.
+                 * @return <code>true</code> if it is a goal, <code>false</else> otherwise.
+                 */
+                protected abstract boolean isGoal(T node);
 
-	    public T getNodeId() {
-	        return nodeId;
-	    }
+                /**
+                 * Cost for the operation to go to <code>to</code> from
+                 * <code>from</from>.
+                 *
+                 * @param from The node we are leaving.
+                 * @param to The node we are reaching.
+                 * @return The cost of the operation.
+                 */
+                protected abstract Double g(T from, T to);
 
-	    public double getG() {
-	        return g;
-	    }
-
-	    public void setG(double g) {
-	        this.g = g;
-	    }
-
-	    public void calcF(T destination) {
-	        this.h = heuristic.get(destination);
-	        this.f = g + h;
-	    } 
-
-	    public double getH() {
-	        return h;
-	    }
-
-	    public double getF() {
-	        return f;
-	    }
-	 }
-
-	/**
-	 * The graph represents an undirected graph. 
-	 * 
-	 * @author SERVICE-NOW\ameya.patil
-	 *
-	 * @param <T>
-	 */
-	final class GraphAStar<T> implements Iterable<T> {
-	    /*
-	     * A map from the nodeId to outgoing edge.
-	     * An outgoing edge is represented as a tuple of NodeData and the edge length
-	     */
-	    private final Map<T, Map<NodeData<T>, Double>> graph;
-	    /*
-	     * A map of heuristic from a node to each other node in the graph.
-	     */
-	    private final Map<T, Map<T, Double>> heuristicMap;
-	    /*
-	     * A map between nodeId and nodedata.
-	     */
-	    private final Map<T, NodeData<T>> nodeIdNodeData;
-
-	    public GraphAStar(Map<T, Map<T, Double>> heuristicMap) {
-	        if (heuristicMap == null) throw new NullPointerException("The huerisic map should not be null");
-	        graph = new HashMap<T, Map<NodeData<T>, Double>>();
-	        nodeIdNodeData = new HashMap<T, NodeData<T>>();
-	        this.heuristicMap = heuristicMap;
-	    } 
-
-	    /**
-	     * Adds a new node to the graph.
-	     * Internally it creates the nodeData and populates the heuristic map concerning input node into node data.
-	     * 
-	     * @param nodeId the node to be added
-	     */
-	    public void addNode(T nodeId) {
-	        if (nodeId == null) throw new NullPointerException("The node cannot be null");
-	        if (!heuristicMap.containsKey(nodeId)) throw new NoSuchElementException("This node is not a part of hueristic map");
-
-	        graph.put(nodeId, new HashMap<NodeData<T>, Double>());
-	        nodeIdNodeData.put(nodeId, new NodeData<T>(nodeId, heuristicMap.get(nodeId)));
-	    }
-
-	    /**
-	     * Adds an edge from source node to destination node.
-	     * There can only be a single edge from source to node.
-	     * Adding additional edge would overwrite the value
-	     * 
-	     * @param nodeIdFirst   the first node to be in the edge
-	     * @param nodeIdSecond  the second node to be second node in the edge
-	     * @param length        the length of the edge.
-	     */
-	    public void addEdge(T nodeIdFirst, T nodeIdSecond, double length) {
-	        if (nodeIdFirst == null || nodeIdSecond == null) throw new NullPointerException("The first nor second node can be null.");
-
-	        if (!heuristicMap.containsKey(nodeIdFirst) || !heuristicMap.containsKey(nodeIdSecond)) {
-	            throw new NoSuchElementException("Source and Destination both should be part of the part of hueristic map");
-	        }
-	        if (!graph.containsKey(nodeIdFirst) || !graph.containsKey(nodeIdSecond)) {
-	            throw new NoSuchElementException("Source and Destination both should be part of the part of graph");
-	        }
-
-	        graph.get(nodeIdFirst).put(nodeIdNodeData.get(nodeIdSecond), length);
-	        graph.get(nodeIdSecond).put(nodeIdNodeData.get(nodeIdFirst), length);
-	    }
-
-	    /**
-	     * Returns immutable view of the edges
-	     * 
-	     * @param nodeId    the nodeId whose outgoing edge needs to be returned
-	     * @return          An immutable view of edges leaving that node
-	     */
-	    public Map<NodeData<T>, Double> edgesFrom (T nodeId) {
-	        if (nodeId == null) throw new NullPointerException("The input node should not be null.");
-	        if (!heuristicMap.containsKey(nodeId)) throw new NoSuchElementException("This node is not a part of hueristic map");
-	        if (!graph.containsKey(nodeId)) throw new NoSuchElementException("The node should not be null.");
-
-	        return Collections.unmodifiableMap(graph.get(nodeId));
-	    }
-
-	    /**
-	     * The nodedata corresponding to the current nodeId.
-	     * 
-	     * @param nodeId    the nodeId to be returned
-	     * @return          the nodeData from the 
-	     */ 
-	    public NodeData<T> getNodeData (T nodeId) {
-	        if (nodeId == null) { throw new NullPointerException("The nodeid should not be empty"); }
-	        if (!nodeIdNodeData.containsKey(nodeId))  { throw new NoSuchElementException("The nodeId does not exist"); }
-	        return nodeIdNodeData.get(nodeId);
-	    }
-
-	    /**
-	     * Returns an iterator that can traverse the nodes of the graph
-	     * 
-	     * @return an Iterator.
-	     */
-	    @Override public java.util.Iterator<T> iterator() {
-	        return graph.keySet().iterator();
-	    }
-	}
-
-	public class AStar<T> {
-
-	    private final GraphAStar<T> graph;
+                /**
+                 * Estimated cost to reach a goal node.
+                 * An admissible heuristic never gives a cost bigger than the real
+                 * one.
+                 * <code>from</from>.
+                 *
+                 * @param from The node we are leaving.
+                 * @param to The node we are reaching.
+                 * @return The estimated cost to reach an object.
+                 */
+                protected abstract Double h(T from, T to);
 
 
-	    public AStar (GraphAStar<T> graphAStar) {
-	        this.graph = graphAStar;
-	    }
-
-	    // extend comparator.
-	    public class NodeComparator implements Comparator<NodeData<T>> {
-	        public int compare(NodeData<T> nodeFirst, NodeData<T> nodeSecond) {
-	            if (nodeFirst.getF() > nodeSecond.getF()) return 1;
-	            if (nodeSecond.getF() > nodeFirst.getF()) return -1;
-	            return 0;
-	        }
-	    } 
-
-	    /**
-	     * Implements the A-star algorithm and returns the path from source to destination
-	     * 
-	     * @param source        the source nodeid
-	     * @param destination   the destination nodeid
-	     * @return              the path from source to destination
-	     */
-	    public List astar(T source, T destination) {
-	        /**
-	         * http://stackoverflow.com/questions/20344041/why-does-priority-queue-has-default-initial-capacity-of-11
-	         */
-	        final Queue<NodeData<T>> openQueue = new PriorityQueue<NodeData<T>>(11, new NodeComparator()); 
-
-	        NodeData<T> sourceNodeData = graph.getNodeData(source);
-	        sourceNodeData.setG(0);
-	        sourceNodeData.calcF(destination);
-	        openQueue.add(sourceNodeData);
-
-	        final Map<T, T> path = new HashMap<T, T>();
-	        final Set<NodeData<T>> closedList = new HashSet<NodeData<T>>();
-
-	        while (!openQueue.isEmpty()) {
-	            final NodeData<T> nodeData = openQueue.poll();
-
-	            if (nodeData.getNodeId().equals(destination)) { 
-	                return path1(path, destination);
-	            }
-
-	            closedList.add(nodeData);
-
-	            for (Entry<NodeData<T>, Double> neighborEntry : graph.edgesFrom(nodeData.getNodeId()).entrySet()) {
-	                NodeData<T> neighbor = neighborEntry.getKey();
-
-	                if (closedList.contains(neighbor)) continue;
-
-	                double distanceBetweenTwoNodes = neighborEntry.getValue();
-	                double tentativeG = distanceBetweenTwoNodes + nodeData.getG();
-
-	                if (tentativeG < neighbor.getG()) {
-	                    neighbor.setG(tentativeG);
-	                    neighbor.calcF(destination);
-
-	                    path.put(neighbor.getNodeId(), nodeData.getNodeId());
-	                    if (!openQueue.contains(neighbor)) {
-	                        openQueue.add(neighbor);
-	                    }
-	                }
-	            }
-	        }
-
-	        return null;
-	    }
+                /**
+                 * Generate the successors for a given node.
+                 *
+                 * @param node The node we want to expand.
+                 * @return A list of possible next steps.
+                 */
+                protected abstract List<T> generateSuccessors(T node);
 
 
-	    private List path1(Map<T, T> path, T destination) {
-			// TODO Auto-generated method stub
-			return null;
-		}
+                private PriorityQueue<Path> paths;
+                private HashMap<T, Double> mindists;
+                private Double lastCost;
+                private int expandedCounter;
+
+                /**
+                 * Check how many times a node was expanded.
+                 *
+                 * @return A counter of how many times a node was expanded.
+                 */
+                public int getExpandedCounter(){
+                                return expandedCounter;
+                }
+
+                /**
+                 * Default c'tor.
+                 */
+                public AStar(){
+                                paths = new PriorityQueue<Path>();
+                                mindists = new HashMap<T, Double>();
+                                expandedCounter = 0;
+                                lastCost = 0.0;
+                }
 
 
-		private ArrayList<T> path(Map<T, T> path, T destination) {
-	        assert path != null;
-	        assert destination != null;
+                /**
+                 * Total cost function to reach the node <code>to</code> from
+                 * <code>from</code>.
+                 *  
+                 * The total cost is defined as: f(x) = g(x) + h(x).
+                 * @param from The node we are leaving.
+                 * @param to The node we are reaching.
+                 * @return The total cost.
+                 */
+                protected Double f(Path p, T from, T to){
+                                Double g =  g(from, to) + ((p.parent != null) ? p.parent.g : 0.0);
+                                Double h = h(from, to);
 
-	        final ArrayList<T> pathList = new ArrayList<T>();
-	        pathList.add((T) destination);
-	        while (path.containsKey(destination)) {
-	            destination = path.get(destination);
-	            pathList.add((T) destination);
-	        }
-	        Collections.reverse((java.util.List<?>) pathList);
-	        return pathList;
-	    }
+                                p.g = g;
+                                p.f = g + h;
+
+                                return p.f;
+                }
+
+                /**
+                 * Expand a path.
+                 *
+                 * @param path The path to expand.
+                 */
+                private void expand(Path path){
+                                T p = path.getPoint();
+                                Double min = mindists.get(path.getPoint());
+
+                                /*
+                                 * If a better path passing for this point already exists then
+                                 * don't expand it.
+                                 */
+                                if(min == null || min.doubleValue() > path.f.doubleValue())
+                                                mindists.put(path.getPoint(), path.f);
+                                else
+                                                return;
+
+                                List<T> successors = generateSuccessors(p);
+
+                                for(T t : successors){
+                                                Path newPath = new Path(path);
+                                                newPath.setPoint(t);
+                                                f(newPath, path.getPoint(), t);
+                                                paths.offer(newPath);
+                                }
+
+                                expandedCounter++;
+                }
+
+                /**
+                 * Get the cost to reach the last node in the path.
+                 *
+                 * @return The cost for the found path.
+                 */
+                public Double getCost(){
+                                return lastCost;
+                }
 
 
-	    public void main(String[] args) {
-	        Map<String, Map<String, Double>> hueristic = new HashMap<String, Map<String, Double>>();
-	        // map for A    
-	        Map<String, Double> mapA = new HashMap<String, Double>();
-	        mapA.put("A",  0.0);
-	        mapA.put("B", 10.0);
-	        mapA.put("C", 20.0);
-	        mapA.put("E", 100.0);
-	        mapA.put("F", 110.0);
+                /**
+                 * Find the shortest path to a goal starting from
+                 * <code>start</code>.
+                 *
+                 * @param start The initial node.
+                 * @return A list of nodes from the initial point to a goal,
+                 * <code>null</code> if a path doesn't exist.
+                 */
+                public List<T> compute(T start){
+                                try{
+                                                Path root = new Path();
+                                                root.setPoint(start);
 
+                                                /* Needed if the initial point has a cost.  */
+                                                f(root, start, start);
 
-	        // map for B
-	        Map<String, Double> mapB = new HashMap<String, Double>();
-	        mapB.put("A", 10.0);
-	        mapB.put("B",  0.0);
-	        mapB.put("C", 10.0);
-	        mapB.put("E", 25.0);
-	        mapB.put("F", 40.0);
+                                                expand(root);
 
+                                                for(;;){
+                                                                Path p = paths.poll();
 
-	        // map for C
-	        Map<String, Double> mapC = new HashMap<String, Double>();
-	        mapC.put("A", 20.0);
-	        mapC.put("B", 10.0);
-	        mapC.put("C",  0.0);
-	        mapC.put("E", 10.0);
-	        mapC.put("F", 30.0);
+                                                                if(p == null){
+                                                                                lastCost = Double.MAX_VALUE;
+                                                                                return null;
+                                                                }
 
+                                                                T last = p.getPoint();
 
-	        // map for X
-	        Map<String, Double> mapX = new HashMap<String, Double>();
-	        mapX.put("A", 100.0);
-	        mapX.put("B", 25.0);
-	        mapX.put("C", 10.0);
-	        mapX.put("E",  0.0);
-	        mapX.put("F", 10.0);
+                                                                lastCost = p.g;
 
-	        // map for X
-	        Map<String, Double> mapZ = new HashMap<String, Double>();
-	        mapZ.put("A", 110.0);
-	        mapZ.put("B",  40.0);
-	        mapZ.put("C",  30.0);
-	        mapZ.put("E", 10.0);
-	        mapZ.put("F",  0.0);
+                                                                if(isGoal(last)){
+                                                                                LinkedList<T> retPath = new LinkedList<T>();
 
-	        hueristic.put("A", mapA);
-	        hueristic.put("B", mapB);
-	        hueristic.put("C", mapC);
-	        hueristic.put("E", mapX);
-	        hueristic.put("F", mapZ);
+                                                                                for(Path i = p; i != null; i = i.parent){
+                                                                                                retPath.addFirst(i.getPoint());
+                                                                                }
 
-	        GraphAStar<String> graph = new GraphAStar<String>(hueristic);
-	        graph.addNode("A");
-	        graph.addNode("B");
-	        graph.addNode("C");
-	        graph.addNode("E");
-	        graph.addNode("F");
-
-	        graph.addEdge("A", "B",  10);
-	        graph.addEdge("A", "E", 100);
-	        graph.addEdge("B", "C", 10);
-	        graph.addEdge("C", "E", 10);
-	        graph.addEdge("C", "F", 30);
-	        graph.addEdge("E", "F", 10);
-
-	        AStar<String> aStar = new AStar<String>(graph);
-
-	        for (String path : aStar.astar("A", "F")) {
-	            System.out.println(path);
-	        }
-	    }
-	}
+                                                                                return retPath;
+                                                                }
+                                                                expand(p);
+                                                }
+                                }
+                                catch(Exception e){
+                                                e.printStackTrace();
+                                }
+                                return null;
+                                                
+                }
 }
