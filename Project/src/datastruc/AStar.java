@@ -5,6 +5,12 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.PriorityQueue;
 
+/**
+ * Maintain A* algorithm
+ *
+ * @author zhuangr.
+ *         Created Feb 21, 2015.
+ */
 public class AStar {
 	String start;
 	AStarNode current = null;
@@ -15,6 +21,12 @@ public class AStar {
 	Hashtable<String, Double> costsofar = new Hashtable<>();
 	ArrayList<AStarNode> camefrom = new ArrayList<>();
 
+	/**
+	 * Constructor for path from start to destination
+	 *
+	 * @param start The place user wants to start
+	 * @param destination The place user wants to stop
+	 */
 	public AStar(String start, String destination) {
 
 		this.start = start;
@@ -23,6 +35,12 @@ public class AStar {
 		this.costsofar.put(start, 0.0);
 	}
 
+	/**
+	 * Constructor for trip planer
+	 *
+	 * @param start The place user wants to start
+	 * @param distance The distance user wants to travel
+	 */
 	public AStar(String start, double distance) {
 
 		this.start = start;
@@ -32,6 +50,11 @@ public class AStar {
 
 	}
 
+	/**
+	 * Find the most interesting path the users can travel within his distance limit
+	 *
+	 * @return If the path can be found return true, else false.
+	 */
 	public boolean tripPlaner() {
 		ArrayList<String> myString = new ArrayList<>();
 		PriorityQueue<AStarNode> reversed = new PriorityQueue<AStarNode>(
@@ -43,8 +66,6 @@ public class AStar {
 		while (reversed.isEmpty() == false) {
 
 			this.current = reversed.poll();
-			// System.out.print(this.current.name);
-
 			if (this.getTotalDistance() > this.distance) {
 				this.camefrom.remove(this.camefrom.size() - 1);
 				return true;
@@ -65,12 +86,6 @@ public class AStar {
 
 					if (myString.contains(next) != true)
 						reversed.add(new AStarNode(next, newcost));
-					// System.out.println("currentcost:" + currentcost + "   " +
-					// "CurrentToNe:" + acttonext
-					// + "   =" + newcost +
-					// "  "+"EstimateNtoD:"+nexttoDestination+"  " + priority +
-					// " "+this.current.name+" "+next+"\n");
-
 					if (this.camefrom.contains(this.current) != true) {
 						myString.add(this.current.name);
 						this.camefrom.add(this.current);
@@ -84,6 +99,11 @@ public class AStar {
 		return false;
 	}
 
+	/**
+	 * Find the shortest path based on the user required start and destination place.
+	 *
+	 * @return True if the path is found, else false.
+	 */
 	public boolean findPath() {
 		double newcost = 0.0;
 		while (this.frontier.isEmpty() == false) {
@@ -109,20 +129,8 @@ public class AStar {
 
 				if (this.costsofar.containsKey(next) != true
 						|| newcost < this.costsofar.get(next)) {
-					// if (this.costsofar.containsKey(next) == true) {
-					// this.costsofar.replace(next, newcost);
-					// }
-
 					this.costsofar.put(next, newcost);
-
-					// int nexttoDestination=Heuristic(next, this.destination);
-					// int priority = newcost +nexttoDestination;
 					this.frontier.add(new AStarNode(next, priority));
-					// System.out.println("currentcost:" + currentcost + "   " +
-					// "CurrentToNe:" + acttonext
-					// + "   =" + newcost +
-					// "  "+"EstimateNtoD:"+nexttoDestination+"  " + priority +
-					// " "+this.current.name+" "+next+"\n");
 					if (this.camefrom.contains(this.current) != true)
 						this.camefrom.add(this.current);
 
@@ -134,121 +142,103 @@ public class AStar {
 		return false;
 	}
 
+	/**
+	 * Find the path that uses shortest time based on the user required start and destination place
+	 *
+	 * @return True if the path is found, else false
+	 */
 	public boolean shortestTimePath() {
 		double newtime = 0.0;
 		while (this.frontier.isEmpty() == false) {
 
 			this.current = this.frontier.poll();
-			// System.out.print(this.current.name);
 
 			if (this.current.name.equals(this.destination)) {
 
 				this.camefrom.add(this.current);
 				return true;
 			}
-			// this.frontier.clear();
 
 			for (String next : this.cities.allNeighbor(this.current.name)
 					.keySet()) {
 
 				double currentcost = this.costsofar.get(this.current.name);
-				// int acttonext = Heuristic(this.current.name, next);
 				double acttonext = this.cities.allNeighbor(this.current.name)
 						.get(next).time;
 				newtime = currentcost + acttonext;
-				// newcost = currentcost + heurtonext;
 				double nexttoDestination = Heuristic(next, this.destination);
 				double priority = newtime + nexttoDestination;
 
 				if (this.costsofar.containsKey(next) != true
 						|| newtime < this.costsofar.get(next)) {
-					// if (this.costsofar.containsKey(next) == true) {
-					// this.costsofar.replace(next, newcost);
-					// }
-
 					this.costsofar.put(next, newtime);
-
-					// int nexttoDestination=Heuristic(next, this.destination);
-					// int priority = newcost +nexttoDestination;
 					this.frontier.add(new AStarNode(next, priority));
-					// System.out.println("currentcost:" + currentcost + "   " +
-					// "CurrentToNe:" + acttonext
-					// + "   =" + newtime +
-					// "  "+"EstimateNtoD:"+nexttoDestination+"  " + priority +
-					// " "+this.current.name+" "+next+"\n");
 					if (this.camefrom.contains(this.current) != true)
 						this.camefrom.add(this.current);
-
 				}
-
 			}
-
 		}
 		return false;
 	}
 
+	/**
+	 * Find the path the cost the least based on user required start and destination place.
+	 *
+	 * @return True if the path is found, else false.
+	 */
 	public boolean cheapestPath() {
 		double newMoneyCost = 0.0;
 		while (this.frontier.isEmpty() == false) {
 
 			this.current = this.frontier.poll();
-			// System.out.print(this.current.name);
-
 			if (this.current.name.equals(this.destination)) {
 
 				this.camefrom.add(this.current);
 				return true;
 			}
-			// this.frontier.clear();
-
 			for (String next : this.cities.allNeighbor(this.current.name)
 					.keySet()) {
 
 				double currentcost = this.costsofar.get(this.current.name);
-				// int acttonext = Heuristic(this.current.name, next);
 				double acttonext = this.cities.allNeighbor(this.current.name)
 						.get(next).moneyspend;
 				newMoneyCost = currentcost + acttonext;
-				// newcost = currentcost + heurtonext;
 				double nexttoDestination = Heuristic(next, this.destination);
 				double priority = newMoneyCost + nexttoDestination;
 
 				if (this.costsofar.containsKey(next) != true
 						|| newMoneyCost < this.costsofar.get(next)) {
-					// if (this.costsofar.containsKey(next) == true) {
-					// this.costsofar.replace(next, newcost);
-					// }
 
 					this.costsofar.put(next, newMoneyCost);
-
-					// int nexttoDestination=Heuristic(next, this.destination);
-					// int priority = newcost +nexttoDestination;
 					this.frontier.add(new AStarNode(next, priority));
-					// System.out.println("currentcost:" + currentcost + "   " +
-					// "CurrentToNe:" + acttonext
-					// + "   =" + newMoneyCost +
-					// "  "+"EstimateNtoD:"+nexttoDestination+"  " + priority +
-					// " "+this.current.name+" "+next+"\n");
 					if (this.camefrom.contains(this.current) != true)
 						this.camefrom.add(this.current);
-
 				}
-
 			}
-
 		}
 		return false;
 	}
 
+	/**
+	 * Heuristic function to estimate the distance from the place to the destination
+	 *
+	 * @param next The place 
+	 * @param goal The destination
+	 * @return The heuristic distance
+	 */
 	public double Heuristic(String next, String goal) {
-		return (Math.abs((this.cities.adj.get(goal).x - this.cities.adj
-				.get(next).x)) + Math
-				.abs((this.cities.adj.get(goal).y - this.cities.adj.get(next).y)));
-		// return Math.sqrt(((this.cities.adj.get(goal).x
-		// -this.cities.adj.get(next).x))^2+ ((this.cities.adj.get(goal).y -
-		// this.cities.adj.get(next).y))^2);
+//		return (Math.abs((this.cities.adj.get(goal).x - this.cities.adj
+//				.get(next).x)) + Math
+//				.abs((this.cities.adj.get(goal).y - this.cities.adj.get(next).y)));
+		return Math.sqrt((this.cities.adj.get(goal).x - this.cities.adj
+				.get(next).x)^2 + (this.cities.adj.get(goal).y - this.cities.adj.get(next).y)^2);
 	}
 
+	/**
+	 * Get the total time of the path
+	 *
+	 * @return The total travelling time of the path
+	 */
 	public double getTotalTime() {
 		double totalTime = 0;
 		for (int i = 0; i < this.camefrom.size() - 1; i++)
@@ -256,9 +246,13 @@ public class AStar {
 					+ this.cities.adj.get(this.camefrom.get(i).name).neighboring
 							.get(this.camefrom.get(i + 1).name).time;
 		return totalTime;
-
 	}
 
+	/**
+	 * Get the total distance of the path
+	 *
+	 * @return The total distance of the path
+	 */
 	public double getTotalDistance() {
 		double totalDistance = 0;
 		for (int i = 0; i < this.camefrom.size() - 1; i++)
@@ -269,6 +263,11 @@ public class AStar {
 
 	}
 
+	/**
+	 * Get the total cost of the path
+	 *
+	 * @return The total travelling spend of the path
+	 */
 	public double getTotalSpend() {
 		double totalSpend = 0;
 		for (int i = 0; i < this.camefrom.size() - 1; i++)
@@ -279,6 +278,11 @@ public class AStar {
 
 	}
 
+	/**
+	 * Get the total interesting index of the path
+	 *
+	 * @return The total interesting index of the path
+	 */
 	public float getTotalInterestingIndex() {
 		float totalInterest = 0;
 		for (int i = 0; i < this.camefrom.size() - 1; i++)
@@ -301,7 +305,6 @@ public class AStar {
 
 		@Override
 		public int compareTo(AStarNode o) {
-			// TODO Auto-generated method stub.
 			if (this.constant < o.constant)
 				return -1;
 			else if (this.constant == o.constant)
